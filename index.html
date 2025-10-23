@@ -1,1 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Chants de Messe</title>
+    
+    <!-- Tailwind CSS (pour le style) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons (pour les icônes) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Nous utilisons la police par défaut de Tailwind (Inter) */
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+
+        /* Classe CSS pour les petits spinners de chargement */
+        .spinner {
+            border-width: 3px; /* Épaisseur de la bordure */
+            border-top-color: transparent; /* Rend le haut invisible */
+            border-radius: 50%; /* Cercle parfait */
+            animation: spin 1s linear infinite; /* Animation de rotation */
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="container mx-auto max-w-2xl p-4 sm:p-8">
+        
+        <!-- === 1. EN-TÊTE === -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Générateur de Chants de Messe</h1>
+            <p class="text-lg text-gray-600 mt-2">Propositions pour votre célébration</p>
+        </div>
+
+        <!-- === 2. PANNEAU DE CONTRÔLE === -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <div class="mb-4">
+                <label for="temps-liturgique" class="block text-sm font-medium text-gray-700 mb-2">Temps liturgique :</label>
+                <!-- Le menu déroulant pour le filtre -->
+                <select id="temps-liturgique" class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="Ordinaire">Temps Ordinaire</option>
+                    <option value="Avent">Avent</option>
+                    <option value="Noel">Noël</option>
+                    <option value="Careme">Carême</option>
+                    <option value="Paques">Pâques</option>
+                </select>
+            </div>
+            
+            <!-- Le bouton principal pour tout générer -->
+            <button id="btn-generer" class="w-full bg-blue-600 text-white font-semibold p-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out flex items-center justify-center space-x-3">
+                <!-- Texte du bouton -->
+                <span id="btn-generer-text">Générer les propositions</span>
+                <!-- Spinner principal (caché par défaut) -->
+                <div id="spinner-main" class="spinner w-5 h-5 border-4 border-white hidden"></div>
+            </button>
+        </div>
+
+        <!-- === 3. ZONE DE RÉSULTATS === -->
+        <div id="results-container" class="space-y-6">
+            
+            <!-- Message initial (sera remplacé par les cartes) -->
+            <div id="initial-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow">
+                Cliquez sur "Générer" pour commencer.
+            </div>
+
+            <!-- 
+                MODÈLE DE CARTE (pour référence)
+                Les cartes seront insérées ici par le JavaScript.
+
+                <div class="bg-white p-5 rounded-lg shadow chant-card" data-type="Entree">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-700">ENTRÉE</h3>
+                        
+                        <! -- Le bouton "Relancer" et son spinner (l'un cache l'autre) -->
+                        <div class="relative w-6 h-6">
+                            <button class="btn-relancer text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="Entree">
+                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                            </button>
+                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute top-0 left-0 opacity-0 transition-opacity duration-300"></div>
+                        </div>
+                    </div>
+                    
+                    <! -- Le contenu du chant -->
+                    <div class="card-content transition-opacity duration-300">
+                        <p class="chant-nom text-2xl font-semibold text-gray-900 mb-4">Nom du Chant</p>
+                        <div class="space-y-3">
+                            <div class="chant-page flex items-center space-x-2 text-gray-600">
+                                <i data-lucide="book-open" class="w-4 h-4"></i>
+                                <span>Carnet : A 14-52</span>
+                            </div>
+                            <a href="#" class="chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline">
+                                <i data-lucide="link" class="w-4 h-4"></i>
+                                <span>Lien partition</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            -->
+
+        </div>
+    </div> <!-- fin .container -->
+
+
+    <!-- === 4. SCRIPT (LOGIQUE DE L'APPLICATION) === -->
+    <script>
+        // Attend que la page soit entièrement chargée
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Constantes pour les types de chants
+            const CHANT_TYPES = [
+                { key: 'Entree', nom: 'Entrée' },
+                { key: 'Ordinaire', nom: 'Ordinaire' },
+                { key: 'Offertoire', nom: 'Offertoire' },
+                { key: 'Communion', nom: 'Communion' },
+                { key: 'Sortie', nom: 'Sortie' }
+            ];
+
+            // Récupération des éléments HTML
+            const btnGenerer = document.getElementById('btn-generer');
+            const btnGenererText = document.getElementById('btn-generer-text');
+            const spinnerMain = document.getElementById('spinner-main');
+            const resultsContainer = document.getElementById('results-container');
+            const initialMessage = document.getElementById('initial-message');
+            const selectTemps = document.getElementById('temps-liturgique');
+
+            // === SIMULATION DU BACKEND (API) ===
+            // Ceci est une fausse base de données pour faire fonctionner l'interface.
+            const MOCK_DB = {
+                Entree: [
+                    { nom: 'Peuple de prêtres', page_carnet: 'A 14-52', lien_partition: '#' },
+                    { nom: 'Dieu nous accueille', page_carnet: 'A 1', lien_partition: null },
+                    { nom: 'Signes par milliers', page_carnet: 'A 21-07', lien_partition: '#' }
+                ],
+                Ordinaire: [
+                    { nom: 'Messe de la Trinité', page_carnet: 'C 220', lien_partition: '#' },
+                    { nom: 'Messe du Partage', page_carnet: 'AL 179', lien_partition: '#' }
+                ],
+                Offertoire: [
+                    { nom: 'Prenez et mangez', page_carnet: 'D 38-01', lien_partition: null },
+                    { nom: 'En esprit et en vérité', page_carnet: 'C 209', lien_partition: '#' }
+                ],
+                Communion: [
+                    { nom: 'La Sagesse a dressé une table', page_carnet: 'D 28-04', lien_partition: '#' },
+                    { nom: 'Pain véritable', page_carnet: 'D 300', lien_partition: null }
+                ],
+                Sortie: [
+                    { nom: 'Allez dire à tous les hommes', page_carnet: 'T 15', lien_partition: '#' },
+                    { nom: 'Que vive mon âme à te louer', page_carnet: 'T 18', lien_partition: null }
+                ]
+            };
+
+            // Fonction qui simule un délai réseau (pour voir les spinners)
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            // Fonction qui simule l'appel à votre API Vercel
+            // Elle sera remplacée par un vrai `fetch()`
+            async function mockFetchAPI(url) {
+                await wait(500 + Math.random() * 500); // Simule un délai réseau aléatoire
+                
+                const urlParams = new URLSearchParams(url.split('?')[1]);
+                const temps = urlParams.get('temps'); // Non utilisé dans la maquette, mais sera envoyé à l'API
+                const type = urlParams.get('type');
+                
+                // Si on demande un type spécifique (pour "Relancer")
+                if (type) {
+                    const chantsDuType = MOCK_DB[type] || [];
+                    const chant = chantsDuType[Math.floor(Math.random() * chantsDuType.length)];
+                    return { chant }; // Renvoie un seul chant
+                } 
+                // Si on demande tout (génération initiale)
+                else {
+                    const propositions = {};
+                    CHANT_TYPES.forEach(t => {
+                        const chantsDuType = MOCK_DB[t.key] || [];
+                        propositions[t.key] = chantsDuType[Math.floor(Math.random() * chantsDuType.length)];
+                    });
+                    return { propositions }; // Renvoie les 5 chants
+                }
+            }
+            // === FIN DE LA SIMULATION DU BACKEND ===
+
+
+            // Fonction pour afficher/cacher le chargement du bouton principal
+            function setGlobalLoading(isLoading) {
+                if (isLoading) {
+                    btnGenerer.disabled = true;
+                    btnGenererText.classList.add('hidden');
+                    spinnerMain.classList.remove('hidden');
+                    if (initialMessage) {
+                        initialMessage.innerHTML = `<div class="spinner w-10 h-10 border-4 border-blue-600 mx-auto"></div>`;
+                    }
+                } else {
+                    btnGenerer.disabled = false;
+                    btnGenererText.classList.remove('hidden');
+                    spinnerMain.classList.add('hidden');
+                }
+            }
+
+            // Fonction pour afficher/cacher le chargement d'UNE SEULE carte
+            function setCardLoading(card, isLoading) {
+                const btnRelancer = card.querySelector('.btn-relancer');
+                const spinner = card.querySelector('.spinner-card');
+                const content = card.querySelector('.card-content');
+                
+                if (isLoading) {
+                    btnRelancer.classList.add('opacity-0');
+                    spinner.classList.remove('opacity-0');
+                    content.classList.add('opacity-50'); // Estompe le contenu
+                } else {
+                    btnRelancer.classList.remove('opacity-0');
+                    spinner.classList.add('opacity-0');
+                    content.classList.remove('opacity-50');
+                }
+            }
+
+            // Fonction qui CRÉE une carte de chant et l'ajoute à la page
+            function renderChantCard(chant, typeInfo) {
+                if (!chant) return; // Ne rien faire si aucun chant n'est trouvé
+
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-lg shadow chant-card opacity-0 transition-opacity duration-500';
+                card.setAttribute('data-type', typeInfo.key);
+
+                // Gère le lien de partition (s'il est null ou vide)
+                const lienHtml = chant.lien_partition 
+                    ? `<a href="${chant.lien_partition}" target="_blank" class="chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline">
+                           <i data-lucide="link" class="w-4 h-4"></i>
+                           <span>Lien partition</span>
+                       </a>`
+                    : `<div class="chant-lien flex items-center space-x-2 text-gray-400">
+                           <i data-lucide="link-2-off" class="w-4 h-4"></i>
+                           <span>Pas de lien</span>
+                       </div>`;
+
+                // Gère la page (si elle est null ou vide)
+                const pageHtml = chant.page_carnet
+                    ? `<div class="chant-page flex items-center space-x-2 text-gray-600">
+                           <i data-lucide="book-open" class="w-4 h-4"></i>
+                           <span>Carnet : ${chant.page_carnet}</span>
+                       </div>`
+                    : `<div class="chant-page flex items-center space-x-2 text-gray-400">
+                           <i data-lucide="book" class="w-4 h-4"></i>
+                           <span>Page non spécifiée</span>
+                       </div>`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-700">${typeInfo.nom}</h3>
+                        <div class="relative w-6 h-6">
+                            <button class="btn-relancer text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="${typeInfo.key}">
+                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                            </button>
+                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute top-0 left-0 opacity-0 transition-opacity duration-300"></div>
+                        </div>
+                    </div>
+                    <div class="card-content transition-opacity duration-300">
+                        <p class="chant-nom text-2xl font-semibold text-gray-900 mb-4">${chant.nom}</p>
+                        <div class="space-y-3">
+                            ${pageHtml}
+                            ${lienHtml}
+                        </div>
+                    </div>
+                `;
+                resultsContainer.appendChild(card);
+                
+                // Provoque une petite transition en fondu
+                setTimeout(() => card.classList.remove('opacity-0'), 50);
+            }
+
+            // Fonction qui MET À JOUR le contenu d'une carte existante
+            function updateCardContent(card, chant) {
+                if (!chant) return;
+
+                const nomEl = card.querySelector('.chant-nom');
+                const pageEl = card.querySelector('.chant-page');
+                const lienEl = card.querySelector('.chant-lien');
+
+                nomEl.textContent = chant.nom;
+
+                // Mise à jour de la page
+                if (chant.page_carnet) {
+                    pageEl.innerHTML = `<i data-lucide="book-open" class="w-4 h-4"></i> <span>Carnet : ${chant.page_carnet}</span>`;
+                    pageEl.className = 'chant-page flex items-center space-x-2 text-gray-600';
+                } else {
+                    pageEl.innerHTML = `<i data-lucide="book" class="w-4 h-4"></i> <span>Page non spécifiée</span>`;
+                    pageEl.className = 'chant-page flex items-center space-x-2 text-gray-400';
+                }
+
+                // Mise à jour du lien
+                if (chant.lien_partition) {
+                    lienEl.innerHTML = `<i data-lucide="link" class="w-4 h-4"></i> <span>Lien partition</span>`;
+                    lienEl.className = 'chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline';
+                    lienEl.href = chant.lien_partition;
+                    lienEl.target = '_blank';
+                } else {
+                    lienEl.innerHTML = `<i data-lucide="link-2-off" class="w-4 h-4"></i> <span>Pas de lien</span>`;
+                    lienEl.className = 'chant-lien flex items-center space-x-2 text-gray-400';
+                    lienEl.removeAttribute('href');
+                    lienEl.removeAttribute('target');
+                }
+
+                // IMPORTANT : Recrée les icônes Lucide dans la carte mise à jour
+                lucide.createIcons({
+                    nodes: [pageEl, lienEl]
+                });
+            }
+
+
+            // === ACTIONS UTILISATEUR ===
+
+            // Action 1: Clic sur le bouton "Générer les propositions"
+            async function handleGenererPropositions() {
+                setGlobalLoading(true); // Affiche le spinner principal
+                resultsContainer.innerHTML = ''; // Vide les anciens résultats
+                
+                const temps = selectTemps.value;
+                
+                // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
+                // const response = await fetch(`/api/getChants?temps=${temps}`);
+                // const data = await response.json();
+                
+                // --- Début: Simulation ---
+                const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
+                // --- Fin: Simulation ---
+
+                if (data.propositions) {
+                    CHANT_TYPES.forEach(typeInfo => {
+                        const chant = data.propositions[typeInfo.key];
+                        renderChantCard(chant, typeInfo);
+                    });
+                }
+                
+                setGlobalLoading(false); // Cache le spinner principal
+                
+                // IMPORTANT : Recrée toutes les icônes Lucide pour les nouvelles cartes
+                lucide.createIcons();
+            }
+
+            // Action 2: Clic sur un bouton "Relancer" d'une carte
+            async function handleRelancerUnChant(e) {
+                // Utilise la délégation d'événement
+                const btn = e.target.closest('.btn-relancer');
+                
+                if (btn) {
+                    const type = btn.dataset.type; // Récupère le type (ex: "Entree")
+                    const temps = selectTemps.value;
+                    const card = btn.closest('.chant-card'); // Trouve la carte parente
+                    
+                    setCardLoading(card, true); // Affiche le spinner de la carte
+
+                    // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
+                    // const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
+                    // const data = await response.json();
+
+                    // --- Début: Simulation ---
+                    const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
+                    // --- Fin: Simulation ---
+
+                    if (data.chant) {
+                        updateCardContent(card, data.chant); // Met à jour la carte
+                    }
+                    
+                    setCardLoading(card, false); // Cache le spinner de la carte
+                }
+            }
+            
+            // Initialise les icônes une première fois au chargement
+            lucide.createIcons();
+
+            // Attache les écouteurs d'événements
+            btnGenerer.addEventListener('click', handleGenererPropositions);
+            resultsContainer.addEventListener('click', handleRelancerUnChant);
+        });
+    </script>
+</body>
+</html>
+
 
