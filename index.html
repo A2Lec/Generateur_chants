@@ -37,7 +37,7 @@
         <!-- === 1. EN-TÊTE === -->
         <div class="text-center mb-8">
             <!-- Modification: font-bold -> font-semibold -->
-            <h1 class="text-3xl sm:text-4xl font-semibold text-gray-800">Générateur de Chants de Messe</h1>
+            <h1 class="text-3xl sm:text-4xl text-gray-800">Générateur de Chants de Messe</h1>
             <p class="text-lg text-gray-600 mt-2">Propositions pour votre célébration</p>
         </div>
 
@@ -326,7 +326,7 @@
                 
                 if (btn) {
                     const type = btn.dataset.type; // Récupère le type (ex: "Entree")
-                    const temps = selectTems.value;
+                    const temps = selectTemps.value; // CORRECTION: selectTems -> selectTemps
                     const card = btn.closest('.chant-card'); // Trouve la carte parente
                     
                     setCardLoading(card, true); // Affiche le spinner de la carte
@@ -357,4 +357,5 @@
     </script>
 </body>
 </html>
+
 
