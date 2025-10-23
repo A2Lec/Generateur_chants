@@ -5,7 +5,6 @@ import { createClient } from '@supabase/supabase-js';
 const CHANT_TYPES = ['Entree', 'Ordinaire', 'Offertoire', 'Communion', 'Sortie'];
 
 // Crée le client Supabase en utilisant les variables d'environnement
-// C'est sécurisé : ces clés ne sont jamais visibles par l'utilisateur
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY // Utilise la clé "service_role" pour le backend
@@ -14,37 +13,32 @@ const supabase = createClient(
 // La fonction "handler" est le point d'entrée de la fonction serverless Vercel
 export default async function handler(request, response) {
   try {
-    // 1. Récupère les paramètres de l'URL (ex: /api/getChants?temps=Avent&type=Entree)
+    // 1. Récupère les paramètres de l'URL
     const { temps, type } = request.query;
-
-    // Définit le temps liturgique (par défaut 'Ordinaire' si non fourni)
-    const tempsLiturgique = temps || 'Ordinaire';
 
     // 2. Scénario B : L'utilisateur "relance" UN SEUL chant
     if (type) {
       
-      // Requête pour un seul chant aléatoire d'un type et temps spécifiques
+      // Requête pour un seul chant aléatoire d'un type
+      // TEST: Nous avons retiré le filtre "temps_liturgique"
       const { data, error } = await supabase
         .from('chants')                          // Depuis la table 'chants'
         .select('*')                             // Sélectionne toutes les colonnes
         .eq('type', type)                        // Où le type correspond (ex: 'Entree')
-        .eq('temps_liturgique', tempsLiturgique) // Et le temps correspond
-        .order('random()')                       // Trié aléatoirement (magie de PostgreSQL)
+        // .eq('temps_liturgique', tempsLiturgique) // LIGNE SUPPRIMÉE POUR LE TEST
+        .order('random()')                       // Trié aléatoirement
         .limit(1)                                // Prends-en un seul
-        .single();                               // Renvoie un objet (pas un tableau)
+        .single();                               // Renvoie un objet
 
       // Gère les erreurs de la requête
       if (error) {
-        // Si 'single()' ne trouve rien, il renvoie une erreur "PGRST116"
-        // Ce n'est pas une "vraie" erreur, c'est juste qu'il n'y a pas de chant
         if (error.code === 'PGRST116') {
-          return response.status(200).json({ chant: null }); // Renvoie null si aucun chant trouvé
+          return response.status(200).json({ chant: null }); 
         }
-        // Pour les autres erreurs, on les renvoie
         throw error;
       }
 
-      // Renvoie le chant trouvé (format attendu par index.html : { chant: {...} })
+      // Renvoie le chant trouvé
       return response.status(200).json({ chant: data });
 
     } 
@@ -57,28 +51,36 @@ export default async function handler(request, response) {
           .from('chants')
           .select('*')
           .eq('type', chantType)
-          .eq('temps_liturgique', tempsLiturgique)
+          // .eq('temps_liturgique', tempsLiturgique) // LIGNE SUPPRIMÉE POUR LE TEST
           .order('random()')
           .limit(1)
-          .single() // On veut un seul objet par type
+          .single()
       );
 
-      // On exécute les 5 requêtes en parallèle pour être plus rapide
+      // On exécute les 5 requêtes en parallèle
       const results = await Promise.all(queries);
 
-      // On formate la réponse comme attendu par index.html
-      // { propositions: { Entree: {...}, Ordinaire: {...}, ... } }
+      // On formate la réponse
       const propositions = {};
       
       results.forEach((result, index) => {
         const chantTypeKey = CHANT_TYPES[index];
         
-        if (result.error) {
-          // Si une requête échoue (ex: pas de chant 'Sortie' pour 'Avent')
-          console.warn(`Pas de chant trouvé pour ${chantTypeKey} / ${tempsLiturgique}`);
-          propositions[chantTypeKey] = null; // On envoie null
-        } else {
-          propositions[chantTypeKey] = result.data; // On envoie le chant
+        // CORRECTION DE LOGIQUE : On vérifie si l'erreur EST PGRST116
+        // Si c'est le cas (0 résultat), ce n'est pas une "vraie" erreur.
+        if (result.error && result.error.code !== 'PGRST116') {
+           // C'est une vraie erreur (ex: connexion)
+           console.error(`Erreur Supabase pour ${chantTypeKey}:`, result.error.message);
+           propositions[chantTypeKey] = null;
+        }
+        else if (result.error && result.error.code === 'PGRST116') {
+            // Pas de chant trouvé, on le logue
+            console.warn(`Pas de chant trouvé pour ${chantTypeKey} (sans filtre de temps)`);
+            propositions[chantTypeKey] = null;
+        }
+        else {
+          // Tout va bien, on envoie la donnée
+          propositions[chantTypeKey] = result.data; 
         }
       });
 
@@ -95,5 +97,3 @@ export default async function handler(request, response) {
     });
   }
 }
-
-
