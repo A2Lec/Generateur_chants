@@ -36,7 +36,8 @@
         
         <!-- === 1. EN-TÊTE === -->
         <div class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Générateur de Chants de Messe</h1>
+            <!-- Modification: font-bold -> font-semibold -->
+            <h1 class="text-3xl sm:text-4xl font-semibold text-gray-800">Générateur de Chants de Messe</h1>
             <p class="text-lg text-gray-600 mt-2">Propositions pour votre célébration</p>
         </div>
 
@@ -72,37 +73,9 @@
             </div>
 
             <!-- 
-                MODÈLE DE CARTE (pour référence)
-                Les cartes seront insérées ici par le JavaScript.
-
-                <div class="bg-white p-5 rounded-lg shadow chant-card" data-type="Entree">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-700">ENTRÉE</h3>
-                        
-                        <! -- Le bouton "Relancer" et son spinner (l'un cache l'autre) -->
-                        <div class="relative w-6 h-6">
-                            <button class="btn-relancer text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="Entree">
-                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                            </button>
-                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute top-0 left-0 opacity-0 transition-opacity duration-300"></div>
-                        </div>
-                    </div>
-                    
-                    <! -- Le contenu du chant -->
-                    <div class="card-content transition-opacity duration-300">
-                        <p class="chant-nom text-2xl font-semibold text-gray-900 mb-4">Nom du Chant</p>
-                        <div class="space-y-3">
-                            <div class="chant-page flex items-center space-x-2 text-gray-600">
-                                <i data-lucide="book-open" class="w-4 h-4"></i>
-                                <span>Carnet : A 14-52</span>
-                            </div>
-                            <a href="#" class="chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline">
-                                <i data-lucide="link" class="w-4 h-4"></i>
-                                <span>Lien partition</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                Modification: 
+                Le bloc de "MODÈLE DE CARTE" qui était ici en commentaire
+                a été supprimé pour plus de clarté.
             -->
 
         </div>
@@ -253,7 +226,8 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-700">${typeInfo.nom}</h3>
+                        <!-- Modification: font-bold -> font-semibold -->
+                        <h3 class="text-sm font-semibold uppercase tracking-wider text-blue-700">${typeInfo.nom}</h3>
                         <div class="relative w-6 h-6">
                             <button class="btn-relancer text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="${typeInfo.key}">
                                 <i data-lucide="refresh-cw" class="w-5 h-5"></i>
@@ -262,7 +236,8 @@
                         </div>
                     </div>
                     <div class="card-content transition-opacity duration-300">
-                        <p class="chant-nom text-2xl font-semibold text-gray-900 mb-4">${chant.nom}</p>
+                        <!-- Modification: font-semibold -> font-medium -->
+                        <p class="chant-nom text-2xl font-medium text-gray-900 mb-4">${chant.nom}</p>
                         <div class="space-y-3">
                             ${pageHtml}
                             ${lienHtml}
@@ -324,11 +299,11 @@
                 const temps = selectTemps.value;
                 
                 // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
-                const response = await fetch(`/api/getChants?temps=${temps}`);
-                const data = await response.json();
+                // const response = await fetch(`/api/getChants?temps=${temps}`);
+                // const data = await response.json();
                 
                 // --- Début: Simulation ---
-                //onst data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
+                const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
                 // --- Fin: Simulation ---
 
                 if (data.propositions) {
@@ -351,17 +326,17 @@
                 
                 if (btn) {
                     const type = btn.dataset.type; // Récupère le type (ex: "Entree")
-                    const temps = selectTemps.value;
+                    const temps = selectTems.value;
                     const card = btn.closest('.chant-card'); // Trouve la carte parente
                     
                     setCardLoading(card, true); // Affiche le spinner de la carte
 
                     // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
-                    const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
-                    const data = await response.json();
+                    // const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
+                    // const data = await response.json();
 
                     // --- Début: Simulation ---
-                    // const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
+                    const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
                     // --- Fin: Simulation ---
 
                     if (data.chant) {
@@ -382,5 +357,4 @@
     </script>
 </body>
 </html>
-
 
