@@ -324,11 +324,11 @@
                 const temps = selectTemps.value;
                 
                 // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
-                // const response = await fetch(`/api/getChants?temps=${temps}`);
-                // const data = await response.json();
+                const response = await fetch(`/api/getChants?temps=${temps}`);
+                const data = await response.json();
                 
                 // --- Début: Simulation ---
-                const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
+                //onst data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
                 // --- Fin: Simulation ---
 
                 if (data.propositions) {
@@ -357,11 +357,11 @@
                     setCardLoading(card, true); // Affiche le spinner de la carte
 
                     // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
-                    // const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
-                    // const data = await response.json();
+                    const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
+                    const data = await response.json();
 
                     // --- Début: Simulation ---
-                    const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
+                    // const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
                     // --- Fin: Simulation ---
 
                     if (data.chant) {
