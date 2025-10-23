@@ -56,7 +56,8 @@
             </div>
             
             <!-- Le bouton principal pour tout générer -->
-            <button id="btn-generer" class="w-full bg-blue-600 text-white font-semibold p-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out flex items-center justify-center space-x-3">
+            <!-- Modification: font-semibold retiré -->
+            <button id="btn-generer" class="w-full bg-blue-600 text-white p-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out flex items-center justify-center space-x-3">
                 <!-- Texte du bouton -->
                 <span id="btn-generer-text">Générer les propositions</span>
                 <!-- Spinner principal (caché par défaut) -->
@@ -228,11 +229,16 @@
                     <div class="flex justify-between items-center mb-4">
                         <!-- Modification: font-bold -> font-semibold -->
                         <h3 class="text-sm font-semibold uppercase tracking-wider text-blue-700">${typeInfo.nom}</h3>
-                        <div class="relative w-6 h-6">
-                            <button class="btn-relancer text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="${typeInfo.key}">
+                        <!-- CORRECTION: Zone cliquable agrandie de w-6 h-6 à w-10 h-10 -->
+                        <div class="relative w-10 h-10">
+                            <!-- 
+                              Le bouton remplit maintenant la zone de 40x40px
+                            -->
+                            <button class="btn-relancer w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="${typeInfo.key}">
                                 <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                             </button>
-                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute top-0 left-0 opacity-0 transition-opacity duration-300"></div>
+                            <!-- CORRECTION: Spinner centré avec inset-0 m-auto -->
+                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute inset-0 m-auto opacity-0 transition-opacity duration-300"></div>
                         </div>
                     </div>
                     <div class="card-content transition-opacity duration-300">
