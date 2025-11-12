@@ -5,95 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Générateur de Chants de Messe</title>
     
-    <!-- Tailwind CSS (pour le style) -->
+    <!-- 1. Tailwind CSS (pour la mise en page rapide) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide Icons (pour les icônes) -->
+    <!-- 2. Lucide Icons (pour les icônes) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- === NOUVEAU : Lien vers votre fichier CSS === -->
+    <!-- 3. Fichier CSS Personnalisé (pour le design "Matériel") -->
     <link rel="stylesheet" href="style.css">
+
 </head>
-<body class="bg-gray-50 min-h-screen">
+
+<!-- Le body commence avec le thème par défaut (défini dans style.css) -->
+<body>
 
     <div class="container mx-auto max-w-2xl p-4 sm:p-8">
         
         <!-- === 1. EN-TÊTE ET CONTRÔLES === -->
         <header class="mb-8">
-            <h1 class="text-3xl text-gray-800 text-center mb-2">Générateur de Chants de Messe</h1>
-            <p class="text-center text-gray-500 mb-6">Propositions pour votre célébration.</p>
+            <!-- Le style "font-display" vient de style.css -->
+            <h1 class="font-display text-4xl font-bold text-gray-800 text-center mb-2">Générateur de Chants</h1>
+            <p class="text-center text-gray-500 mb-6 text-lg">Propositions pour votre célébration.</p>
 
-            <div class="flex flex-col sm:flex-row gap-2">
+            <div class="flex flex-col sm:flex-row gap-3">
                 <!-- Sélecteur de Temps Liturgique -->
-                <select id="select-temps" class="flex-grow p-3 border bg-white border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="select-temps" class="flex-grow p-3 border bg-white border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
                     <option value="Ordinaire">Temps Ordinaire</option>
                     <option value="Avent">Avent</option>
-                    <option value="Noel">Noël</option>
                     <option value="Careme">Carême</option>
+                    <option value="Noel">Noël</option>
                     <option value="Paques">Pâques</option>
                 </select>
 
-                <!-- Bouton Générer -->
-                <button id="btn-generer" class="bg-blue-600 text-white p-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                <!-- Bouton Générer (le style "Matériel" est dans style.css) -->
+                <button id="btn-generer" class="bg-blue-600 text-white p-3 px-6 rounded-lg hover:bg-blue-700 font-medium">
                     Générer les propositions
                 </button>
             </div>
         </header>
 
         <!-- === 2. ZONE DE RÉSULTATS === -->
-        <main id="results-container" class="space-y-4">
-            <p class="text-center text-gray-500">Cliquez sur "Générer" pour commencer.</p>
+        <!-- La grille est définie par Tailwind, mais les cartes sont stylisées par style.css -->
+        <main id="results-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Message initial, sera remplacé par JS -->
+            <p class="text-center text-gray-500 col-span-2">Cliquez sur "Générer" pour commencer.</p>
         </main>
 
     </div>
 
     <!-- === MODÈLE DE CARTE (CACHÉ) === -->
-    <!-- C'est le 'template' que JavaScript va cloner 5 fois -->
+    <!-- C'est le 'template' que JavaScript va cloner. Il est stylisé par style.css -->
     <template id="chant-card-template">
-        <div class="chant-card bg-white shadow-sm border border-gray-200 rounded-lg p-4 transition-all duration-300">
-            <!-- En-tête de la carte (Titre + Bouton Relancer) -->
+        <div class="chant-card bg-white rounded-lg p-5">
+            <!-- En-tête de la carte -->
             <div class="flex justify-between items-center mb-3">
-                <h3 class="card-title text-sm text-blue-700 uppercase tracking-wider"></h3>
+                <!-- Titre (couleur via .card-title-text dans style.css) -->
+                <h3 class="card-title-text font-display text-lg font-semibold uppercase tracking-wide"></h3>
                 
-                <!-- Zone Cliquable pour Relancer (plus grande pour le mobile) -->
+                <!-- Zone de rechargement -->
                 <div class="relative w-10 h-10 flex items-center justify-center">
-                    <!-- Le spinner (caché par défaut) -->
+                    <!-- Spinner (classe .spinner de style.css) -->
                     <div class="card-spinner spinner w-6 h-6 border-gray-400 hidden"></div>
-                    <!-- Le bouton (visible par défaut) -->
-                    <!-- J'ai ajouté 'rounded-full' pour un meilleur effet de survol sur mobile -->
                     <button class="btn-relancer absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-full" data-type="">
                         <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Contenu de la carte (Nom + Infos) -->
+            <!-- Contenu de la carte -->
             <div class="card-content">
-                <p class="chant-nom text-xl text-gray-800 mb-4">Chargement...</p>
-                <div class="flex items-center space-x-4 text-gray-600">
+                <p class="chant-nom text-2xl font-display text-gray-800 mb-4">Chargement...</p>
+                <div class="flex flex-col space-y-2 text-gray-600">
                     <!-- Info N° Carnet -->
                     <span class="page-carnet flex items-center">
-                        <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+                        <i data-lucide="book-open" class="w-4 h-4 mr-2 text-gray-400"></i>
                         N° : ...
                     </span>
-                    <!-- Info Lien Partition (Caché par défaut) -->
+                    <!-- Info Lien Partition -->
                     <a href="#" target="_blank" class="lien-partition hidden flex items-center text-blue-600 hover:underline">
                         <i data-lucide="link" class="w-4 h-4 mr-2"></i>
-                        Partition
+                        Voir la partition
                     </a>
                 </div>
             </div>
 
-            <!-- Message d'erreur (Caché par défaut) -->
+            <!-- Message d'erreur -->
             <div class="card-error text-red-600 hidden">
                 Pas de chant trouvé pour cette sélection.
             </div>
         </div>
     </template>
 
-
-    <!-- === NOUVEAU : Lien vers votre fichier JavaScript === -->
-    <!-- 'defer' s'assure que le script s'exécute après le chargement du HTML -->
+    <!-- === 5. JAVASCRIPT === -->
+    <!-- 'defer' s'assure que le script se charge après le HTML -->
     <script src="script.js" defer></script>
 </body>
 </html>
