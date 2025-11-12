@@ -1,72 +1,66 @@
-// 'DOMContentLoaded' garantit que le script s'exécute après le chargement du HTML.
-// C'est l'équivalent de 'defer' sur la balise <script>.
 document.addEventListener('DOMContentLoaded', () => {
-    
+            
     // Références aux éléments du DOM
     const btnGenerer = document.getElementById('btn-generer');
     const selectTemps = document.getElementById('select-temps');
     const resultsContainer = document.getElementById('results-container');
     const cardTemplate = document.getElementById('chant-card-template');
+    const body = document.body;
+
+    // --- NOUVEAU : Logique de Thème ---
+    
+    /**
+     * Applique la classe de thème au body en fct du temps liturgique.
+     * @param {string} temps - La valeur du sélecteur (ex: "Avent").
+     */
+    function applyTheme(temps) {
+        // Retire toutes les classes de thème possibles
+        body.classList.remove('theme-Ordinaire', 'theme-Avent', 'theme-Careme', 'theme-Noel', 'theme-Paques');
+        // Ajoute la classe de thème actuelle
+        body.classList.add(`theme-${temps}`);
+    }
 
     // --- Fonctions d'aide pour l'UI ---
 
-    /**
-     * Met à jour le contenu d'une carte avec les données d'un chant.
-     * @param {HTMLElement} card - L'élément DOM de la carte.
-     * @param {Object} chant - L'objet chant (ex: { nom: "...", numero_carnet: "184", lien_partition: "..." }).
-     */
     function updateCardContent(card, chant) {
-        // Cache l'erreur et montre le contenu
         card.querySelector('.card-error').classList.add('hidden');
         card.querySelector('.card-content').classList.remove('hidden');
 
         const nomChant = card.querySelector('.chant-nom');
 
-        // Si le chant est 'null' (pas trouvé)
         if (!chant) {
             card.querySelector('.card-error').classList.remove('hidden');
             card.querySelector('.card-content').classList.add('hidden');
             return;
         }
 
-        // Remplit le nom du chant
         nomChant.textContent = chant.nom ? chant.nom : 'Nom non trouvé';
         
-        // Mettre à jour le numéro du carnet (nouvelle colonne 'numero_carnet')
         const pageCarnet = card.querySelector('.page-carnet');
         pageCarnet.textContent = chant.numero_carnet ? `N° : ${chant.numero_carnet}` : 'N° : N/A';
-        // On ré-ajoute l'icône qui était dans le texte
-        pageCarnet.insertAdjacentHTML('afterbegin', '<i data-lucide="book-open" class="w-4 h-4 mr-2"></i>');
+        pageCarnet.insertAdjacentHTML('afterbegin', '<i data-lucide="book-open" class="w-4 h-4 mr-2 text-gray-400"></i>');
 
-
-        // Mettre à jour le lien de la partition (nouvelle colonne 'lien_partition')
         const lienPartition = card.querySelector('.lien-partition');
         if (chant.lien_partition) {
-            lienPartition.href = chant.lien_partition; // Définit le lien
-            lienPartition.classList.remove('hidden'); // Rend l'icône visible
+            lienPartition.href = chant.lien_partition;
+            lienPartition.classList.remove('hidden');
         } else {
-            lienPartition.classList.add('hidden'); // Cache l'icône si pas de lien
+            lienPartition.classList.add('hidden');
         }
         
-        // Redessine les icônes qu'on vient d'ajouter
-        // 'lucide' est une variable globale chargée par le script dans le <head>
         lucide.createIcons();
     }
 
-    /**
-     * Affiche/Cache le spinner principal (sur le gros bouton).
-     * @param {boolean} isLoading - État de chargement.
-     */
     function setMainLoading(isLoading) {
         btnGenerer.disabled = isLoading;
-        btnGenerer.textContent = isLoading ? 'Génération...' : 'Générer les propositions';
+        if(isLoading) {
+            // Remplace le texte par un spinner
+            btnGenerer.innerHTML = '<span class="spinner w-5 h-5 border-white mx-auto"></span>';
+        } else {
+            btnGenerer.textContent = 'Générer les propositions';
+        }
     }
 
-    /**
-     * Affiche/Cache le spinner d'une carte individuelle.
-     * @param {HTMLElement} card - L'élément DOM de la carte.
-     * @param {boolean} isLoading - État de chargement.
-     */
     function setCardLoading(card, isLoading) {
         const spinner = card.querySelector('.card-spinner');
         const button = card.querySelector('.btn-relancer');
@@ -74,11 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
         button.classList.toggle('hidden', isLoading);
     }
 
-    /**
-     * Crée les 5 cartes "vides" au début.
-     */
     function createInitialCards() {
-        resultsContainer.innerHTML = ''; // Vide le conteneur
+        resultsContainer.innerHTML = '';
         const types = [
             { key: 'Entree', label: 'Entrée' },
             { key: 'Ordinaire', label: 'Ordinaire' },
@@ -87,48 +78,41 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'Sortie', label: 'Sortie' }
         ];
 
-        for (const type of types) {
+        types.forEach((type, index) => {
             const cardClone = cardTemplate.content.cloneNode(true);
-            cardClone.querySelector('.card-title').textContent = type.label;
-            cardClone.querySelector('.btn-relancer').dataset.type = type.key;
+            const cardElement = cardClone.firstElementChild;
             
-            // Masque le contenu et l'erreur, montre le "chargement"
-            cardClone.querySelector('.card-content').classList.add('hidden');
-            cardClone.querySelector('.card-error').classList.add('hidden');
-            cardClone.querySelector('.chant-nom').textContent = '...';
+            cardElement.querySelector('.card-title-text').textContent = type.label;
+            cardElement.querySelector('.btn-relancer').dataset.type = type.key;
+            
+            cardElement.querySelector('.card-content').classList.add('hidden');
+            cardElement.querySelector('.card-error').classList.add('hidden');
+            cardElement.querySelector('.chant-nom').textContent = '...';
+            
+            // Applique un délai d'animation (défini dans style.css)
+            cardElement.style.animationDelay = `${index * 50}ms`;
 
-            resultsContainer.appendChild(cardClone.firstElementChild);
-        }
-        // 'lucide' est une variable globale chargée par le script dans le <head>
-        lucide.createIcons(); // Active les nouvelles icônes
+            resultsContainer.appendChild(cardElement);
+        });
+        lucide.createIcons();
     }
-
-    // --- Fonctions d'API (Simulation) ---
-    // La simulation est commentée, nous utilisons l'API réelle.
-    /*
-    const mockDB = { ... };
-    async function mockFetchAPI(url) { ... }
-    */
 
     // --- Logique Principale ---
 
-    /**
-     * Gère le clic sur "Générer les propositions" (les 5 cartes).
-     */
     async function handleGenererPropositions() {
         setMainLoading(true);
-        createInitialCards(); // Crée les 5 cartes
+        createInitialCards(); 
 
         const temps = selectTemps.value;
         const allCards = resultsContainer.querySelectorAll('.chant-card');
 
         try {
-            // --- Appel API Réel (Décommenté) ---
+            // Appel API Réel
             const response = await fetch(`/api/getChants?temps=${temps}`);
+            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
             const data = await response.json();
             
             if (data.propositions) {
-                // Met à jour chaque carte avec les données reçues
                 allCards.forEach(card => {
                     const cardType = card.querySelector('.btn-relancer').dataset.type;
                     const chantData = data.propositions[cardType];
@@ -138,44 +122,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Erreur lors de la génération :', error);
-            resultsContainer.innerHTML = '<p class="text-red-600">Erreur de connexion avec l\'API.</p>';
+            resultsContainer.innerHTML = `<p class="text-red-600 col-span-2 text-center">Erreur de connexion avec l'API. (${error.message})</p>`;
         } finally {
             setMainLoading(false);
         }
     }
 
-    /**
-     * Gère le clic sur l'icône "Relancer" (une seule carte).
-     */
     async function handleRelancerUnChant(event) {
         const btn = event.target.closest('.btn-relancer');
         
         if (btn) {
-            const type = btn.dataset.type; // Récupère le type (ex: "Entree")
+            const type = btn.dataset.type;
             const temps = selectTemps.value;
-            const card = btn.closest('.chant-card'); // Trouve la carte parente
+            const card = btn.closest('.chant-card');
             
-            setCardLoading(card, true); // Affiche le spinner de la carte
+            setCardLoading(card, true); 
 
-            // --- Appel API Réel (Décommenté) ---
-            const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
-            const data = await response.json();
+            try {
+                const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
+                if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                const data = await response.json();
 
-            if (data.chant) {
-                updateCardContent(card, data.chant); // Met à jour la carte
+                if (data.chant) {
+                    updateCardContent(card, data.chant);
+                } else {
+                    // S'assure que même si la data est 'null', on l'affiche
+                    updateCardContent(card, null);
+                }
+            } catch (error) {
+                 console.error('Erreur lors du relancement :', error);
+                 updateCardContent(card, null); // Affiche l'erreur sur la carte
+            } finally {
+                setCardLoading(card, false);
             }
-            
-            setCardLoading(card, false); // Cache le spinner de la carte
         }
     }
     
-    // Initialise les icônes une première fois au chargement
-    // 'lucide' est une variable globale chargée par le script dans le <head>
+    // Initialise les icônes et le thème
     lucide.createIcons();
+    applyTheme(selectTemps.value); // Applique le thème au chargement
 
     // Attache les écouteurs d'événements
     btnGenerer.addEventListener('click', handleGenererPropositions);
     resultsContainer.addEventListener('click', handleRelancerUnChant);
+    
+    // NOUVEAU : Change le thème quand le sélecteur change
+    selectTemps.addEventListener('change', (e) => {
+        applyTheme(e.target.value);
+    });
 
-    // Le message initial est déjà dans le HTML, pas besoin de le rajouter ici.
 });

@@ -1,16 +1,86 @@
-/* Nous utilisons la police par défaut de Tailwind (Inter) */
+/* 1. Importation des Polices Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Slab:wght@500;700&display=swap');
+
+/* 2. Définition des polices personnalisées */
 body { 
-    font-family: 'Inter', sans-serif; 
+    font-family: 'Poppins', sans-serif; 
+    background-color: #f8fafc; /* Fond gris très clair (Tailwind bg-slate-50) */
+}
+h1, h2, h3, .font-display {
+    font-family: 'Roboto Slab', serif;
 }
 
-/* Classe CSS pour les petits spinners de chargement */
+/* 3. Variables de couleur pour les thèmes */
+:root {
+    --c-ordinaire: #22c55e; /* Vert */
+    --c-avent: #a855f7;     /* Violet */
+    --c-careme: #d946ef;    /* Fuchsia/Rose */
+    --c-noel: #eab308;      /* Jaune/Or */
+    --c-paques: #f8fafc;    /* Blanc/Gris clair */
+    
+    /* Couleur du thème actif (par défaut: Ordinaire) */
+    --theme-color: var(--c-ordinaire);
+}
+
+/* 4. Application des thèmes via des classes sur le <body> */
+.theme-Ordinaire { --theme-color: var(--c-ordinaire); }
+.theme-Avent     { --theme-color: var(--c-avent); }
+.theme-Careme    { --theme-color: var(--c-careme); }
+.theme-Noel      { --theme-color: var(--c-noel); }
+.theme-Paques    { --theme-color: var(--c-paques); }
+
+/* Ajustement spécial pour Pâques (texte sombre) */
+.theme-Paques .card-title-text { color: #a16207; } /* Jaune foncé */
+
+/* 5. Style des cartes "Matériel" */
+.chant-card {
+    /* Ombre douce pour l'effet "flottant" */
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transition: all 0.2s ease-out;
+    border-top: 4px solid var(--theme-color); /* La bordure colorée ! */
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.chant-card:hover {
+    /* Effet d'élévation au survol */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Animation d'apparition */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 6. Style du titre de la carte (avec la couleur du thème) */
+.card-title-text {
+    color: var(--theme-color);
+    transition: color 0.3s ease;
+}
+
+/* 7. Style des boutons (plus "Matériel") */
+#btn-generer {
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.1);
+    transition: all 0.2s ease;
+}
+#btn-generer:hover {
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.15);
+    transform: translateY(-1px);
+}
+#btn-generer:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+
+/* 8. Classe CSS pour les petits spinners de chargement */
 .spinner {
-    border-width: 3px; /* Épaisseur de la bordure */
-    border-top-color: transparent; /* Rend le haut invisible */
-    border-radius: 50%; /* Cercle parfait */
-    animation: spin 1s linear infinite; /* Animation de rotation */
+    border-width: 3px;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
