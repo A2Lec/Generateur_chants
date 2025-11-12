@@ -34,301 +34,241 @@
 
     <div class="container mx-auto max-w-2xl p-4 sm:p-8">
         
-        <!-- === 1. EN-TÊTE === -->
-        <div class="text-center mb-8">
-            <!-- Modification: font-bold -> font-semibold -->
-            <h1 class="text-3xl sm:text-4xl text-gray-800">Générateur de Chants de Messe</h1>
-            <p class="text-lg text-gray-600 mt-2">Propositions pour votre célébration</p>
-        </div>
+        <!-- === 1. EN-TÊTE ET CONTRÔLES === -->
+        <header class="mb-8">
+            <h1 class="text-3xl text-gray-800 text-center mb-2">Générateur de Chants de Messe</h1>
+            <p class="text-center text-gray-500 mb-6">Propositions pour votre célébration.</p>
 
-        <!-- === 2. PANNEAU DE CONTRÔLE === -->
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <div class="mb-4">
-                <label for="temps-liturgique" class="block text-sm font-medium text-gray-700 mb-2">Temps liturgique :</label>
-                <!-- Le menu déroulant pour le filtre -->
-                <select id="temps-liturgique" class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            <div class="flex flex-col sm:flex-row gap-2">
+                <!-- Sélecteur de Temps Liturgique -->
+                <select id="select-temps" class="flex-grow p-3 border bg-white border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="Ordinaire">Temps Ordinaire</option>
                     <option value="Avent">Avent</option>
                     <option value="Noel">Noël</option>
                     <option value="Careme">Carême</option>
                     <option value="Paques">Pâques</option>
                 </select>
-            </div>
-            
-            <!-- Le bouton principal pour tout générer -->
-            <!-- Modification: font-semibold retiré -->
-            <button id="btn-generer" class="w-full bg-blue-600 text-white p-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out flex items-center justify-center space-x-3">
-                <!-- Texte du bouton -->
-                <span id="btn-generer-text">Générer les propositions</span>
-                <!-- Spinner principal (caché par défaut) -->
-                <div id="spinner-main" class="spinner w-5 h-5 border-4 border-white hidden"></div>
-            </button>
-        </div>
 
-        <!-- === 3. ZONE DE RÉSULTATS === -->
-        <div id="results-container" class="space-y-6">
-            
-            <!-- Message initial (sera remplacé par les cartes) -->
-            <div id="initial-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow">
-                Cliquez sur "Générer" pour commencer.
+                <!-- Bouton Générer -->
+                <button id="btn-generer" class="bg-blue-600 text-white p-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    Générer les propositions
+                </button>
             </div>
+        </header>
 
+        <!-- === 2. ZONE DE RÉSULTATS === -->
+        <main id="results-container" class="space-y-4">
+            <!-- Le contenu sera injecté ici par JavaScript -->
             <!-- 
-                Modification: 
-                Le bloc de "MODÈLE DE CARTE" qui était ici en commentaire
-                a été supprimé pour plus de clarté.
+                Modèle d'une carte (sera générée 5x)
+                <div class="chant-card bg-white shadow-sm border border-gray-200 rounded-lg p-4">
+                    ...
+                </div>
             -->
+        </main>
 
+    </div>
+
+    <!-- === MODÈLE DE CARTE (CACHÉ) === -->
+    <!-- C'est le 'template' que JavaScript va cloner 5 fois -->
+    <template id="chant-card-template">
+        <div class="chant-card bg-white shadow-sm border border-gray-200 rounded-lg p-4 transition-all duration-300">
+            <!-- En-tête de la carte (Titre + Bouton Relancer) -->
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="card-title text-sm text-blue-700 uppercase tracking-wider"></h3>
+                
+                <!-- Zone Cliquable pour Relancer (plus grande pour le mobile) -->
+                <div class="relative w-10 h-10 flex items-center justify-center">
+                    <!-- Le spinner (caché par défaut) -->
+                    <div class="card-spinner spinner w-6 h-6 border-gray-400 hidden"></div>
+                    <!-- Le bouton (visible par défaut) -->
+                    <!-- J'ai ajouté 'rounded-full' pour un meilleur effet de survol sur mobile -->
+                    <button class="btn-relancer absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-full" data-type="">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenu de la carte (Nom + Infos) -->
+            <div class="card-content">
+                <p class="chant-nom text-xl text-gray-800 mb-4">Chargement...</p>
+                <div class="flex items-center space-x-4 text-gray-600">
+                    <!-- Info N° Carnet -->
+                    <span class="page-carnet flex items-center">
+                        <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+                        N° : ...
+                    </span>
+                    <!-- Info Lien Partition (Caché par défaut) -->
+                    <a href="#" target="_blank" class="lien-partition hidden flex items-center text-blue-600 hover:underline">
+                        <i data-lucide="link" class="w-4 h-4 mr-2"></i>
+                        Partition
+                    </a>
+                </div>
+            </div>
+
+            <!-- Message d'erreur (Caché par défaut) -->
+            <div class="card-error text-red-600 hidden">
+                Pas de chant trouvé pour cette sélection.
+            </div>
         </div>
-    </div> <!-- fin .container -->
+    </template>
 
 
-    <!-- === 4. SCRIPT (LOGIQUE DE L'APPLICATION) === -->
+    <!-- === JAVASCRIPT === -->
     <script>
-        // Attend que la page soit entièrement chargée
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // Constantes pour les types de chants
-            const CHANT_TYPES = [
-                { key: 'Entree', nom: 'Entrée' },
-                { key: 'Ordinaire', nom: 'Ordinaire' },
-                { key: 'Offertoire', nom: 'Offertoire' },
-                { key: 'Communion', nom: 'Communion' },
-                { key: 'Sortie', nom: 'Sortie' }
-            ];
-
-            // Récupération des éléments HTML
+            // Références aux éléments du DOM
             const btnGenerer = document.getElementById('btn-generer');
-            const btnGenererText = document.getElementById('btn-generer-text');
-            const spinnerMain = document.getElementById('spinner-main');
+            const selectTemps = document.getElementById('select-temps');
             const resultsContainer = document.getElementById('results-container');
-            const initialMessage = document.getElementById('initial-message');
-            const selectTemps = document.getElementById('temps-liturgique');
+            const cardTemplate = document.getElementById('chant-card-template');
 
-            // === SIMULATION DU BACKEND (API) ===
-            // Ceci est une fausse base de données pour faire fonctionner l'interface.
-            const MOCK_DB = {
-                Entree: [
-                    { nom: 'Peuple de prêtres', page_carnet: 'A 14-52', lien_partition: '#' },
-                    { nom: 'Dieu nous accueille', page_carnet: 'A 1', lien_partition: null },
-                    { nom: 'Signes par milliers', page_carnet: 'A 21-07', lien_partition: '#' }
-                ],
-                Ordinaire: [
-                    { nom: 'Messe de la Trinité', page_carnet: 'C 220', lien_partition: '#' },
-                    { nom: 'Messe du Partage', page_carnet: 'AL 179', lien_partition: '#' }
-                ],
-                Offertoire: [
-                    { nom: 'Prenez et mangez', page_carnet: 'D 38-01', lien_partition: null },
-                    { nom: 'En esprit et en vérité', page_carnet: 'C 209', lien_partition: '#' }
-                ],
-                Communion: [
-                    { nom: 'La Sagesse a dressé une table', page_carnet: 'D 28-04', lien_partition: '#' },
-                    { nom: 'Pain véritable', page_carnet: 'D 300', lien_partition: null }
-                ],
-                Sortie: [
-                    { nom: 'Allez dire à tous les hommes', page_carnet: 'T 15', lien_partition: '#' },
-                    { nom: 'Que vive mon âme à te louer', page_carnet: 'T 18', lien_partition: null }
-                ]
-            };
+            // --- Fonctions d'aide pour l'UI ---
 
-            // Fonction qui simule un délai réseau (pour voir les spinners)
-            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-            // Fonction qui simule l'appel à votre API Vercel
-            // Elle sera remplacée par un vrai `fetch()`
-            async function mockFetchAPI(url) {
-                await wait(500 + Math.random() * 500); // Simule un délai réseau aléatoire
-                
-                const urlParams = new URLSearchParams(url.split('?')[1]);
-                const temps = urlParams.get('temps'); // Non utilisé dans la maquette, mais sera envoyé à l'API
-                const type = urlParams.get('type');
-                
-                // Si on demande un type spécifique (pour "Relancer")
-                if (type) {
-                    const chantsDuType = MOCK_DB[type] || [];
-                    const chant = chantsDuType[Math.floor(Math.random() * chantsDuType.length)];
-                    return { chant }; // Renvoie un seul chant
-                } 
-                // Si on demande tout (génération initiale)
-                else {
-                    const propositions = {};
-                    CHANT_TYPES.forEach(t => {
-                        const chantsDuType = MOCK_DB[t.key] || [];
-                        propositions[t.key] = chantsDuType[Math.floor(Math.random() * chantsDuType.length)];
-                    });
-                    return { propositions }; // Renvoie les 5 chants
-                }
-            }
-            // === FIN DE LA SIMULATION DU BACKEND ===
-
-
-            // Fonction pour afficher/cacher le chargement du bouton principal
-            function setGlobalLoading(isLoading) {
-                if (isLoading) {
-                    btnGenerer.disabled = true;
-                    btnGenererText.classList.add('hidden');
-                    spinnerMain.classList.remove('hidden');
-                    if (initialMessage) {
-                        initialMessage.innerHTML = `<div class="spinner w-10 h-10 border-4 border-blue-600 mx-auto"></div>`;
-                    }
-                } else {
-                    btnGenerer.disabled = false;
-                    btnGenererText.classList.remove('hidden');
-                    spinnerMain.classList.add('hidden');
-                }
-            }
-
-            // Fonction pour afficher/cacher le chargement d'UNE SEULE carte
-            function setCardLoading(card, isLoading) {
-                const btnRelancer = card.querySelector('.btn-relancer');
-                const spinner = card.querySelector('.spinner-card');
-                const content = card.querySelector('.card-content');
-                
-                if (isLoading) {
-                    btnRelancer.classList.add('opacity-0');
-                    spinner.classList.remove('opacity-0');
-                    content.classList.add('opacity-50'); // Estompe le contenu
-                } else {
-                    btnRelancer.classList.remove('opacity-0');
-                    spinner.classList.add('opacity-0');
-                    content.classList.remove('opacity-50');
-                }
-            }
-
-            // Fonction qui CRÉE une carte de chant et l'ajoute à la page
-            function renderChantCard(chant, typeInfo) {
-                if (!chant) return; // Ne rien faire si aucun chant n'est trouvé
-
-                const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-lg shadow chant-card opacity-0 transition-opacity duration-500';
-                card.setAttribute('data-type', typeInfo.key);
-
-                // Gère le lien de partition (s'il est null ou vide)
-                const lienHtml = chant.lien_partition 
-                    ? `<a href="${chant.lien_partition}" target="_blank" class="chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline">
-                           <i data-lucide="link" class="w-4 h-4"></i>
-                           <span>Lien partition</span>
-                       </a>`
-                    : `<div class="chant-lien flex items-center space-x-2 text-gray-400">
-                           <i data-lucide="link-2-off" class="w-4 h-4"></i>
-                           <span>Pas de lien</span>
-                       </div>`;
-
-                // Gère la page (si elle est null ou vide)
-                const pageHtml = chant.page_carnet
-                    ? `<div class="chant-page flex items-center space-x-2 text-gray-600">
-                           <i data-lucide="book-open" class="w-4 h-4"></i>
-                           <span>Carnet : ${chant.page_carnet}</span>
-                       </div>`
-                    : `<div class="chant-page flex items-center space-x-2 text-gray-400">
-                           <i data-lucide="book" class="w-4 h-4"></i>
-                           <span>Page non spécifiée</span>
-                       </div>`;
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <!-- Modification: font-bold -> font-semibold -->
-                        <h3 class="text-sm font-semibold uppercase tracking-wider text-blue-700">${typeInfo.nom}</h3>
-                        <!-- CORRECTION: Zone cliquable agrandie de w-6 h-6 à w-10 h-10 -->
-                        <div class="relative w-10 h-10">
-                            <!-- 
-                              Le bouton remplit maintenant la zone de 40x40px
-                            -->
-                            <button class="btn-relancer w-full h-full flex items-center justify-center text-gray-400 hover:text-blue-600 transition-opacity duration-300" data-type="${typeInfo.key}">
-                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                            </button>
-                            <!-- CORRECTION: Spinner centré avec inset-0 m-auto -->
-                            <div class="spinner-card spinner w-5 h-5 border-blue-600 absolute inset-0 m-auto opacity-0 transition-opacity duration-300"></div>
-                        </div>
-                    </div>
-                    <div class="card-content transition-opacity duration-300">
-                        <!-- Modification: font-semibold -> font-medium -->
-                        <p class="chant-nom text-2xl font-medium text-gray-900 mb-4">${chant.nom}</p>
-                        <div class="space-y-3">
-                            ${pageHtml}
-                            ${lienHtml}
-                        </div>
-                    </div>
-                `;
-                resultsContainer.appendChild(card);
-                
-                // Provoque une petite transition en fondu
-                setTimeout(() => card.classList.remove('opacity-0'), 50);
-            }
-
-            // Fonction qui MET À JOUR le contenu d'une carte existante
+            /**
+             * Met à jour le contenu d'une carte avec les données d'un chant.
+             * @param {HTMLElement} card - L'élément DOM de la carte.
+             * @param {Object} chant - L'objet chant (ex: { nom: "...", numero_carnet: "184", lien_partition: "..." }).
+             */
             function updateCardContent(card, chant) {
-                if (!chant) return;
+                // Cache l'erreur et montre le contenu
+                card.querySelector('.card-error').classList.add('hidden');
+                card.querySelector('.card-content').classList.remove('hidden');
 
-                const nomEl = card.querySelector('.chant-nom');
-                const pageEl = card.querySelector('.chant-page');
-                const lienEl = card.querySelector('.chant-lien');
+                const nomChant = card.querySelector('.chant-nom');
 
-                nomEl.textContent = chant.nom;
-
-                // Mise à jour de la page
-                if (chant.page_carnet) {
-                    pageEl.innerHTML = `<i data-lucide="book-open" class="w-4 h-4"></i> <span>Carnet : ${chant.page_carnet}</span>`;
-                    pageEl.className = 'chant-page flex items-center space-x-2 text-gray-600';
-                } else {
-                    pageEl.innerHTML = `<i data-lucide="book" class="w-4 h-4"></i> <span>Page non spécifiée</span>`;
-                    pageEl.className = 'chant-page flex items-center space-x-2 text-gray-400';
+                // Si le chant est 'null' (pas trouvé)
+                if (!chant) {
+                    card.querySelector('.card-error').classList.remove('hidden');
+                    card.querySelector('.card-content').classList.add('hidden');
+                    return;
                 }
 
-                // Mise à jour du lien
+                // Remplit le nom du chant
+                nomChant.textContent = chant.nom ? chant.nom : 'Nom non trouvé';
+                
+                // === MODIFICATION 1 ===
+                // Mettre à jour le numéro du carnet (nouvelle colonne 'numero_carnet')
+                const pageCarnet = card.querySelector('.page-carnet');
+                // On remplace 'chant.page_carnet' par 'chant.numero_carnet'
+                pageCarnet.textContent = chant.numero_carnet ? `N° : ${chant.numero_carnet}` : 'N° : N/A';
+                // On ré-ajoute l'icône qui était dans le texte
+                pageCarnet.insertAdjacentHTML('afterbegin', '<i data-lucide="book-open" class="w-4 h-4 mr-2"></i>');
+
+
+                // === MODIFICATION 2 ===
+                // Mettre à jour le lien de la partition (nouvelle colonne 'lien_partition')
+                const lienPartition = card.querySelector('.lien-partition');
                 if (chant.lien_partition) {
-                    lienEl.innerHTML = `<i data-lucide="link" class="w-4 h-4"></i> <span>Lien partition</span>`;
-                    lienEl.className = 'chant-lien flex items-center space-x-2 text-blue-600 font-medium hover:underline';
-                    lienEl.href = chant.lien_partition;
-                    lienEl.target = '_blank';
+                    lienPartition.href = chant.lien_partition; // Définit le lien
+                    lienPartition.classList.remove('hidden'); // Rend l'icône visible
                 } else {
-                    lienEl.innerHTML = `<i data-lucide="link-2-off" class="w-4 h-4"></i> <span>Pas de lien</span>`;
-                    lienEl.className = 'chant-lien flex items-center space-x-2 text-gray-400';
-                    lienEl.removeAttribute('href');
-                    lienEl.removeAttribute('target');
-                }
-
-                // IMPORTANT : Recrée les icônes Lucide dans la carte mise à jour
-                lucide.createIcons({
-                    nodes: [pageEl, lienEl]
-                });
-            }
-
-
-            // === ACTIONS UTILISATEUR ===
-
-            // Action 1: Clic sur le bouton "Générer les propositions"
-            async function handleGenererPropositions() {
-                setGlobalLoading(true); // Affiche le spinner principal
-                resultsContainer.innerHTML = ''; // Vide les anciens résultats
-                
-                const temps = selectTemps.value;
-                
-                // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
-                const response = await fetch(`/api/getChants?temps=${temps}`);
-                const data = await response.json();
-                
-                // --- Début: Simulation ---
-                //const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
-                // --- Fin: Simulation ---
-
-                if (data.propositions) {
-                    CHANT_TYPES.forEach(typeInfo => {
-                        const chant = data.propositions[typeInfo.key];
-                        renderChantCard(chant, typeInfo);
-                    });
+                    lienPartition.classList.add('hidden'); // Cache l'icône si pas de lien
                 }
                 
-                setGlobalLoading(false); // Cache le spinner principal
-                
-                // IMPORTANT : Recrée toutes les icônes Lucide pour les nouvelles cartes
+                // Redessine les icônes qu'on vient d'ajouter
                 lucide.createIcons();
             }
 
-            // Action 2: Clic sur un bouton "Relancer" d'une carte
-            async function handleRelancerUnChant(e) {
-                // Utilise la délégation d'événement
-                const btn = e.target.closest('.btn-relancer');
+            /**
+             * Affiche/Cache le spinner principal (sur le gros bouton).
+             * @param {boolean} isLoading - État de chargement.
+             */
+            function setMainLoading(isLoading) {
+                btnGenerer.disabled = isLoading;
+                btnGenerer.textContent = isLoading ? 'Génération...' : 'Générer les propositions';
+            }
+
+            /**
+             * Affiche/Cache le spinner d'une carte individuelle.
+             * @param {HTMLElement} card - L'élément DOM de la carte.
+             * @param {boolean} isLoading - État de chargement.
+             */
+            function setCardLoading(card, isLoading) {
+                const spinner = card.querySelector('.card-spinner');
+                const button = card.querySelector('.btn-relancer');
+                spinner.classList.toggle('hidden', !isLoading);
+                button.classList.toggle('hidden', isLoading);
+            }
+
+            /**
+             * Crée les 5 cartes "vides" au début.
+             */
+            function createInitialCards() {
+                resultsContainer.innerHTML = ''; // Vide le conteneur
+                const types = [
+                    { key: 'Entree', label: 'Entrée' },
+                    { key: 'Ordinaire', label: 'Ordinaire' },
+                    { key: 'Offertoire', label: 'Offertoire' },
+                    { key: 'Communion', label: 'Communion' },
+                    { key: 'Sortie', label: 'Sortie' }
+                ];
+
+                for (const type of types) {
+                    const cardClone = cardTemplate.content.cloneNode(true);
+                    cardClone.querySelector('.card-title').textContent = type.label;
+                    cardClone.querySelector('.btn-relancer').dataset.type = type.key;
+                    
+                    // Masque le contenu et l'erreur, montre le "chargement"
+                    cardClone.querySelector('.card-content').classList.add('hidden');
+                    cardClone.querySelector('.card-error').classList.add('hidden');
+                    cardClone.querySelector('.chant-nom').textContent = '...';
+
+                    resultsContainer.appendChild(cardClone.firstElementChild);
+                }
+                lucide.createIcons(); // Active les nouvelles icônes
+            }
+
+            // --- Fonctions d'API (Simulation) ---
+
+            /**
+             * SIMULATION de l'API (à garder en commentaire)
+             */
+            // const mockDB = { ... };
+            // async function mockFetchAPI(url) { ... }
+
+            // --- Logique Principale ---
+
+            /**
+             * Gère le clic sur "Générer les propositions" (les 5 cartes).
+             */
+            async function handleGenererPropositions() {
+                setMainLoading(true);
+                createInitialCards(); // Crée les 5 cartes
+
+                const temps = selectTemps.value;
+                const allCards = resultsContainer.querySelectorAll('.chant-card');
+
+                try {
+                    // --- Appel API Réel (Décommenté) ---
+                    const response = await fetch(`/api/getChants?temps=${temps}`);
+                    const data = await response.json();
+
+                    // --- Simulation (Commentée) ---
+                    // const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
+                    
+                    if (data.propositions) {
+                        // Met à jour chaque carte avec les données reçues
+                        allCards.forEach(card => {
+                            const cardType = card.querySelector('.btn-relancer').dataset.type;
+                            const chantData = data.propositions[cardType];
+                            updateCardContent(card, chantData);
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('Erreur lors de la génération :', error);
+                    resultsContainer.innerHTML = '<p class="text-red-600">Erreur de connexion avec l\'API.</p>';
+                } finally {
+                    setMainLoading(false);
+                }
+            }
+
+            /**
+             * Gère le clic sur l'icône "Relancer" (une seule carte).
+             */
+            async function handleRelancerUnChant(event) {
+                const btn = event.target.closest('.btn-relancer');
                 
                 if (btn) {
                     const type = btn.dataset.type; // Récupère le type (ex: "Entree")
@@ -337,13 +277,12 @@
                     
                     setCardLoading(card, true); // Affiche le spinner de la carte
 
-                    // --- TODO: À REMPLACER PAR LE VRAI APPEL ---
+                    // --- Appel API Réel (Décommenté) ---
                     const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
                     const data = await response.json();
 
-                    // --- Début: Simulation ---
+                    // --- Simulation (Commentée) ---
                     //const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
-                    // --- Fin: Simulation ---
 
                     if (data.chant) {
                         updateCardContent(card, data.chant); // Met à jour la carte
@@ -359,9 +298,10 @@
             // Attache les écouteurs d'événements
             btnGenerer.addEventListener('click', handleGenererPropositions);
             resultsContainer.addEventListener('click', handleRelancerUnChant);
+
+            // Affiche un message initial
+            resultsContainer.innerHTML = '<p class="text-center text-gray-500">Cliquez sur "Générer" pour commencer.</p>';
         });
     </script>
 </body>
 </html>
-
-
