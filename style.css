@@ -1,0 +1,16 @@
+/* Nous utilisons la police par défaut de Tailwind (Inter) */
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+
+/* Classe CSS pour les petits spinners de chargement */
+.spinner {
+    border-width: 3px; /* Épaisseur de la bordure */
+    border-top-color: transparent; /* Rend le haut invisible */
+    border-radius: 50%; /* Cercle parfait */
+    animation: spin 1s linear infinite; /* Animation de rotation */
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

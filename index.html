@@ -11,24 +11,8 @@
     <!-- Lucide Icons (pour les icônes) -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <style>
-        /* Nous utilisons la police par défaut de Tailwind (Inter) */
-        body { 
-            font-family: 'Inter', sans-serif; 
-        }
-
-        /* Classe CSS pour les petits spinners de chargement */
-        .spinner {
-            border-width: 3px; /* Épaisseur de la bordure */
-            border-top-color: transparent; /* Rend le haut invisible */
-            border-radius: 50%; /* Cercle parfait */
-            animation: spin 1s linear infinite; /* Animation de rotation */
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- === NOUVEAU : Lien vers votre fichier CSS === -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -58,13 +42,7 @@
 
         <!-- === 2. ZONE DE RÉSULTATS === -->
         <main id="results-container" class="space-y-4">
-            <!-- Le contenu sera injecté ici par JavaScript -->
-            <!-- 
-                Modèle d'une carte (sera générée 5x)
-                <div class="chant-card bg-white shadow-sm border border-gray-200 rounded-lg p-4">
-                    ...
-                </div>
-            -->
+            <p class="text-center text-gray-500">Cliquez sur "Générer" pour commencer.</p>
         </main>
 
     </div>
@@ -114,194 +92,8 @@
     </template>
 
 
-    <!-- === JAVASCRIPT === -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Références aux éléments du DOM
-            const btnGenerer = document.getElementById('btn-generer');
-            const selectTemps = document.getElementById('select-temps');
-            const resultsContainer = document.getElementById('results-container');
-            const cardTemplate = document.getElementById('chant-card-template');
-
-            // --- Fonctions d'aide pour l'UI ---
-
-            /**
-             * Met à jour le contenu d'une carte avec les données d'un chant.
-             * @param {HTMLElement} card - L'élément DOM de la carte.
-             * @param {Object} chant - L'objet chant (ex: { nom: "...", numero_carnet: "184", lien_partition: "..." }).
-             */
-            function updateCardContent(card, chant) {
-                // Cache l'erreur et montre le contenu
-                card.querySelector('.card-error').classList.add('hidden');
-                card.querySelector('.card-content').classList.remove('hidden');
-
-                const nomChant = card.querySelector('.chant-nom');
-
-                // Si le chant est 'null' (pas trouvé)
-                if (!chant) {
-                    card.querySelector('.card-error').classList.remove('hidden');
-                    card.querySelector('.card-content').classList.add('hidden');
-                    return;
-                }
-
-                // Remplit le nom du chant
-                nomChant.textContent = chant.nom ? chant.nom : 'Nom non trouvé';
-                
-                // === MODIFICATION 1 ===
-                // Mettre à jour le numéro du carnet (nouvelle colonne 'numero_carnet')
-                const pageCarnet = card.querySelector('.page-carnet');
-                // On remplace 'chant.page_carnet' par 'chant.numero_carnet'
-                pageCarnet.textContent = chant.numero_carnet ? `N° : ${chant.numero_carnet}` : 'N° : N/A';
-                // On ré-ajoute l'icône qui était dans le texte
-                pageCarnet.insertAdjacentHTML('afterbegin', '<i data-lucide="book-open" class="w-4 h-4 mr-2"></i>');
-
-
-                // === MODIFICATION 2 ===
-                // Mettre à jour le lien de la partition (nouvelle colonne 'lien_partition')
-                const lienPartition = card.querySelector('.lien-partition');
-                if (chant.lien_partition) {
-                    lienPartition.href = chant.lien_partition; // Définit le lien
-                    lienPartition.classList.remove('hidden'); // Rend l'icône visible
-                } else {
-                    lienPartition.classList.add('hidden'); // Cache l'icône si pas de lien
-                }
-                
-                // Redessine les icônes qu'on vient d'ajouter
-                lucide.createIcons();
-            }
-
-            /**
-             * Affiche/Cache le spinner principal (sur le gros bouton).
-             * @param {boolean} isLoading - État de chargement.
-             */
-            function setMainLoading(isLoading) {
-                btnGenerer.disabled = isLoading;
-                btnGenerer.textContent = isLoading ? 'Génération...' : 'Générer les propositions';
-            }
-
-            /**
-             * Affiche/Cache le spinner d'une carte individuelle.
-             * @param {HTMLElement} card - L'élément DOM de la carte.
-             * @param {boolean} isLoading - État de chargement.
-             */
-            function setCardLoading(card, isLoading) {
-                const spinner = card.querySelector('.card-spinner');
-                const button = card.querySelector('.btn-relancer');
-                spinner.classList.toggle('hidden', !isLoading);
-                button.classList.toggle('hidden', isLoading);
-            }
-
-            /**
-             * Crée les 5 cartes "vides" au début.
-             */
-            function createInitialCards() {
-                resultsContainer.innerHTML = ''; // Vide le conteneur
-                const types = [
-                    { key: 'Entree', label: 'Entrée' },
-                    { key: 'Ordinaire', label: 'Ordinaire' },
-                    { key: 'Offertoire', label: 'Offertoire' },
-                    { key: 'Communion', label: 'Communion' },
-                    { key: 'Sortie', label: 'Sortie' }
-                ];
-
-                for (const type of types) {
-                    const cardClone = cardTemplate.content.cloneNode(true);
-                    cardClone.querySelector('.card-title').textContent = type.label;
-                    cardClone.querySelector('.btn-relancer').dataset.type = type.key;
-                    
-                    // Masque le contenu et l'erreur, montre le "chargement"
-                    cardClone.querySelector('.card-content').classList.add('hidden');
-                    cardClone.querySelector('.card-error').classList.add('hidden');
-                    cardClone.querySelector('.chant-nom').textContent = '...';
-
-                    resultsContainer.appendChild(cardClone.firstElementChild);
-                }
-                lucide.createIcons(); // Active les nouvelles icônes
-            }
-
-            // --- Fonctions d'API (Simulation) ---
-
-            /**
-             * SIMULATION de l'API (à garder en commentaire)
-             */
-            // const mockDB = { ... };
-            // async function mockFetchAPI(url) { ... }
-
-            // --- Logique Principale ---
-
-            /**
-             * Gère le clic sur "Générer les propositions" (les 5 cartes).
-             */
-            async function handleGenererPropositions() {
-                setMainLoading(true);
-                createInitialCards(); // Crée les 5 cartes
-
-                const temps = selectTemps.value;
-                const allCards = resultsContainer.querySelectorAll('.chant-card');
-
-                try {
-                    // --- Appel API Réel (Décommenté) ---
-                    const response = await fetch(`/api/getChants?temps=${temps}`);
-                    const data = await response.json();
-
-                    // --- Simulation (Commentée) ---
-                    // const data = await mockFetchAPI(`/api/getChants?temps=${temps}`);
-                    
-                    if (data.propositions) {
-                        // Met à jour chaque carte avec les données reçues
-                        allCards.forEach(card => {
-                            const cardType = card.querySelector('.btn-relancer').dataset.type;
-                            const chantData = data.propositions[cardType];
-                            updateCardContent(card, chantData);
-                        });
-                    }
-
-                } catch (error) {
-                    console.error('Erreur lors de la génération :', error);
-                    resultsContainer.innerHTML = '<p class="text-red-600">Erreur de connexion avec l\'API.</p>';
-                } finally {
-                    setMainLoading(false);
-                }
-            }
-
-            /**
-             * Gère le clic sur l'icône "Relancer" (une seule carte).
-             */
-            async function handleRelancerUnChant(event) {
-                const btn = event.target.closest('.btn-relancer');
-                
-                if (btn) {
-                    const type = btn.dataset.type; // Récupère le type (ex: "Entree")
-                    const temps = selectTemps.value; // CORRECTION: selectTems -> selectTemps
-                    const card = btn.closest('.chant-card'); // Trouve la carte parente
-                    
-                    setCardLoading(card, true); // Affiche le spinner de la carte
-
-                    // --- Appel API Réel (Décommenté) ---
-                    const response = await fetch(`/api/getChants?type=${type}&temps=${temps}`);
-                    const data = await response.json();
-
-                    // --- Simulation (Commentée) ---
-                    //const data = await mockFetchAPI(`/api/getChants?type=${type}&temps=${temps}`);
-
-                    if (data.chant) {
-                        updateCardContent(card, data.chant); // Met à jour la carte
-                    }
-                    
-                    setCardLoading(card, false); // Cache le spinner de la carte
-                }
-            }
-            
-            // Initialise les icônes une première fois au chargement
-            lucide.createIcons();
-
-            // Attache les écouteurs d'événements
-            btnGenerer.addEventListener('click', handleGenererPropositions);
-            resultsContainer.addEventListener('click', handleRelancerUnChant);
-
-            // Affiche un message initial
-            resultsContainer.innerHTML = '<p class="text-center text-gray-500">Cliquez sur "Générer" pour commencer.</p>';
-        });
-    </script>
+    <!-- === NOUVEAU : Lien vers votre fichier JavaScript === -->
+    <!-- 'defer' s'assure que le script s'exécute après le chargement du HTML -->
+    <script src="script.js" defer></script>
 </body>
 </html>
