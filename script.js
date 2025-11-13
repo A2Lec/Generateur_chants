@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
-    // --- Logique Principale ---
+    // --- Logique Principale ---  
 
     async function handleGenererPropositions() {
         setMainLoading(true);
